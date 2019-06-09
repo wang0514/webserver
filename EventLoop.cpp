@@ -2,6 +2,7 @@
 // Created by wangkaikai on 19-6-8.
 //
 #include "EventLoop.h"
+#include "Util.h"
 #include <iostream>
 #include <sys/eventfd.h>
 using namespace std;
@@ -36,7 +37,7 @@ int createEventFd()
 }
 EventLoop::EventLoop()
         :looping_(false),
-        //pooler_(new Epool()),
+         poller_(new Epoll()),
          wakeupFd_(createEventFd()),
          quit_(false),
          eventHandling_(false),
@@ -69,6 +70,20 @@ EventLoop::~EventLoop() {
 }
 
 void EventLoop::loop() {
+    assert(!looping_);
+    assert(isInLoopThread());
+    looping_ = true;
+    quit_ = false;
+    cout<<"EventLoop start"<<endl;
+    vector<shared_ptr<Channel>> ChannelToAllocate;
+    while (!quit_)
+    {
+        cout<<"start handling event"<<endl;
+        ChannelToAllocate.clear();
+        ChannelToAllocate = poller_->poll();
+        eventHandling_ = true;
+
+    }
 
 }
 
@@ -78,5 +93,7 @@ void EventLoop::quit() {
 
 void EventLoop::wakeup() {
     uint64_t one = 1;
-    ssize_t n =
+    ssize_t n = writen(wakeupFd_,(char *)&one, sizeof(one));
+    if(n!= sizeof(one))
+        cout<<"EventLoop:wakeup() writes" << n << "bytes instead of 8";
 }

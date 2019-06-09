@@ -11,6 +11,7 @@
 #include <iostream>
 #include <assert.h>
 #include "currentThreadNamespace.h"
+#include "Epoll.h"
 using namespace std;
 class EventLoop{
 public:
@@ -28,7 +29,7 @@ public:
 private:
     //private声明时为了避免与函数重名，所以代码里变量默认加上下划线
     bool looping_;//判断当前是否有循环，one thread one loop
-    //shared_ptr<Epoll> poller_;
+    shared_ptr<Epoll> poller_;
     int wakeupFd_;
     bool quit_;
     bool eventHandling_;

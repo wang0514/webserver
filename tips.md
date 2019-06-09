@@ -1,0 +1,3 @@
+## 2019-06-09 一些工作
+1. EventLoop、Epoll还有Channel三个类是整个webwerver的核心部分，Channel类中根据前面分配过来的事件，分别对应处理的的函数，但是这个处理函数只是一个回调函数，并没有进行绑定，也就是说里面的读、写和连接等操作是由外部给定的，它只是留好了接口等调用者往里面填，你想干什么就干什么，只要绑定上去就好，真正实现了调用者和被调用者分离。调用者可以完全不了解底层的实现，但是只要注册一下回调函数米就能完成指定的操作
+2. Channel类中的回调函数先申明，然后通过调用void setReadHandler(CallBack&& readHandler)，void setWriteHandler(CallBack&& writeHandler)，void setErrorHandler(CallBack&& errorHandler)，void setConnHandler(CallBack&& connHandler)四个函数进行操作，调用方通过bind函数将自己调用的处理函数放上去
