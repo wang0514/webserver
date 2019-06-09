@@ -3,4 +3,4 @@ project(webserver)
 
 set(CMAKE_CXX_STANDARD 14)
 
-add_executable(webserver main.cpp EventLoop.cpp EventLoop.h)
+add_executable(webserver main.cpp EventLoop.cpp EventLoop.h currentThreadNamespace.h Util.cpp Util.h)
