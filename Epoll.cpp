@@ -70,3 +70,20 @@ std::vector<shared_ptr<Channel>> Epoll::getRequest(int event_active) {
     }
     return event_data;
 }
+
+
+//TODO 实现添加epoll_event的操作
+void Epoll::epoll_add(shared_ptr<Channel> channel_, int timeout) {
+
+}
+
+
+//TODO 实现epoll_event 中event事件的修改和更新
+void Epoll::epoll_mod(shared_ptr<Channel> channel_, int timeout) {
+
+}
+
+//TODO 实现epoll_event的删除操作
+void Epoll::epoll_del(shared_ptr<Channel> channel_) {
+
+}

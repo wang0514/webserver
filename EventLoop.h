@@ -25,6 +25,9 @@ public:
     {
         assert(isInLoopThread());
     }
+    void updatePoller(shared_ptr<Channel> channel_,int timeout = 0);
+    void addToPoller(shared_ptr<Channel> channel_,int timeout = 0);
+    void removeFromPoller(shared_ptr<Channel> channel_);
 
 private:
     //private声明时为了避免与函数重名，所以代码里变量默认加上下划线

@@ -15,7 +15,6 @@ using namespace std;
 __thread EventLoop * t_loopInthisThread = 0;
 
 /**
- *
  * eventfd()创建一个“eventfd对象”，这个对象能被用户空间应用用作一个事件等待/响应机制，靠内核去响应用户空间应用事件。
  * 这个对象包含一个由内核保持的无符号64位整型计数器。这个计数器由参数initval说明的值来初始化。
  * 它的标记可以有以下属性：
@@ -54,9 +53,41 @@ EventLoop::EventLoop()
     {
         t_loopInthisThread = this;
     }
+    pwakeupChannel_->setEvent(EPOLLIN|EPOLLET);//设置当前事件监听类型为有数据可读，且使用边缘触发方式
+    pwakeupChannel_->setReadHandler(bind(&EventLoop::handleRead,this));
 
 }
 
+/**
+ * 注册需要监听的文件描述符，即把需要的监听的epoll_event挂到红黑树上
+ * @param channel_
+ * @param timeout
+ */
+void EventLoop::addToPoller(shared_ptr<Channel> channel_, int timeout) {
+    poller_->epoll_add(channel_,timeout);
+}
+
+/**
+ * 对已经有的监听文件描述符进行更新
+ * @param channel_
+ * @param timeout
+ */
+void EventLoop::updatePoller(shared_ptr<Channel> channel_, int timeout) {
+    poller_->epoll_mod(channel_,timeout);
+}
+
+/**
+ * 将监听的文件描述符从红黑树上删除
+ * @param channel_
+ */
+void EventLoop::removeFromPoller(shared_ptr<Channel> channel_) {
+    poller_->epoll_del(channel_);
+}
+
+
+/**
+ * EventLoop类中定义的回调函数
+ */
 void EventLoop::handleConn() {
 
 }

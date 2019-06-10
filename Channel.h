@@ -26,7 +26,7 @@ public:
 private:
     typedef std::function<void()> Callback;
     EventLoop *loop_;
-    int fd_;
+    int fd_;//对应的EventLoop对象中的wakeupFd_,这个FD是用eventfd函数生成的非阻塞文件描述符
 
     Callback readHandler_;
     Callback writeHandler_;

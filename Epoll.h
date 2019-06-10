@@ -22,6 +22,9 @@ public:
     {
         return epollFd_;
     }
+    void epoll_add(shared_ptr<Channel> channel_,int timeout);
+    void epoll_mod(shared_ptr<Channel> channel_,int timeout);
+    void epoll_del(shared_ptr<Channel> channel_);
 
 private:
     static const int MAXFDS = 100000; //最大处理的文件描述符个数
