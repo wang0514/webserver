@@ -54,7 +54,12 @@ EventLoop::EventLoop()
         t_loopInthisThread = this;
     }
     pwakeupChannel_->setEvent(EPOLLIN|EPOLLET);//设置当前事件监听类型为有数据可读，且使用边缘触发方式
+    //注册事件处理回调函数，其实也是跟上面操作一样，设置当前事件监听类型为有数据可读，且使用边缘触发方式
     pwakeupChannel_->setReadHandler(bind(&EventLoop::handleRead,this));
+    //注册新连接处理回调函数
+    pwakeupChannel_->setConnHandler(bind(&EventLoop::handleConn,this));
+    //将处理完的的channel对象添加到epoll树上面
+    poller_->epoll_add(pwakeupChannel_,0);
 
 }
 
@@ -87,13 +92,24 @@ void EventLoop::removeFromPoller(shared_ptr<Channel> channel_) {
 
 /**
  * EventLoop类中定义的回调函数
+ * 实际上就是更新channel对象
  */
 void EventLoop::handleConn() {
-
+    updatePoller(pwakeupChannel_,0);
 }
 
+/**
+ * EventLoop处理读数据的函数
+ * 设置监听事件
+ */
 void EventLoop::handleRead() {
-
+    uint64_t one = 1;
+    ssize_t n = readn(wakeupFd_,&one, sizeof(one));
+    if(n!= sizeof(one))
+    {
+        cout<<"EventLoop::handleRead()"<<n<<"bytes";
+    }
+    pwakeupChannel_->setEvent(EPOLLIN|EPOLLET);
 }
 
 EventLoop::~EventLoop() {
@@ -113,7 +129,11 @@ void EventLoop::loop() {
         ChannelToAllocate.clear();
         ChannelToAllocate = poller_->poll();
         eventHandling_ = true;
-
+        for(auto &it:ChannelToAllocate)
+        {
+            it->handleEvents();//调用Channel类中的事件分发函数，分发函数再调用不同的处理函数
+        }
+        eventHandling_ = false;
     }
 
 }

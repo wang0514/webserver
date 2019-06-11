@@ -34,7 +34,7 @@ vector<shared_ptr<Channel>> Epoll::poll() {
             perror("epoll_wait error\n");
         vector<shared_ptr<Channel>> ret = getRequest(event_active);
         //得到需要被处理的channel对象数组
-        if(ret.size())
+        if(ret.size()>0)
             return ret;
     }
 
@@ -74,16 +74,58 @@ std::vector<shared_ptr<Channel>> Epoll::getRequest(int event_active) {
 
 //TODO 实现添加epoll_event的操作
 void Epoll::epoll_add(shared_ptr<Channel> channel_, int timeout) {
-
+    int fd = channel_->getfd();
+    if(timeout>0)
+    {
+        //TODO 计时器信息处理
+    }
+    struct epoll_event event;
+    event.data.fd = fd;
+    event.events = channel_->getEvents();
+    channel_->EqualAndUpdateEvents();
+    fdToChannel_[fd] = channel_;
+    int ret = epoll_ctl(epollFd_,EPOLL_CTL_ADD,fd,&event);
+    if(ret<0)
+    {
+        perror("epoll_ctl add error\n");
+        fdToChannel_[fd].reset();//释放shared_ptr的管理权限
+    }
 }
 
 
 //TODO 实现epoll_event 中event事件的修改和更新
 void Epoll::epoll_mod(shared_ptr<Channel> channel_, int timeout) {
+    if(timeout>0)
+    {
+        //TODO timer设置
+
+    }
+    int fd = channel_->getfd();
+    if(!channel_->EqualAndUpdateEvents())//只在和上一次事件类型不一致时才更新
+    {
+        struct epoll_event event;
+        event.events = channel_->getEvents();
+        event.data.fd = fd;
+        int ret = epoll_ctl(epollFd_,EPOLL_CTL_MOD,fd,&event);
+        if(ret<0)
+        {
+            perror("epoll_ctl mod error\n");
+            fdToChannel_[fd].reset();
+        }
+    }
 
 }
 
 //TODO 实现epoll_event的删除操作
 void Epoll::epoll_del(shared_ptr<Channel> channel_) {
-
+    int fd = channel_->getfd();
+    struct epoll_event event;
+    event.data.fd = fd;
+    event.events = channel_->getEvents();
+    event.events = channel_->getLastEvent();
+    if(epoll_ctl(epollFd_,EPOLL_CTL_DEL,fd,&event)<0)
+    {
+        perror("epoll_ctl del error\n");
+    }
+    fdToChannel_[fd].reset();
 }

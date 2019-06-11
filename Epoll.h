@@ -32,7 +32,7 @@ private:
     std::vector<epoll_event> events_;//就绪队列，也就是epoll_wait的传出参数
     /**
      * 光有fd不够，要把fd转换成Channel，这就是封装的思想
-     * fdToChannel_数组最大值为MAXFDS,也就是说channel类默认生成一个包含MAXFDS个元素的channel对象数组
+     * fdToChannel_数组最大值为MAXFDS,也就是说Epoll类默认生成一个包含MAXFDS个元素的channel对象数组
      * 要处理的操作也是针对这个数组中的元素进行的
      */
     std::shared_ptr<Channel> fdToChannel_[MAXFDS];

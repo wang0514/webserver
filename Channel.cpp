@@ -129,7 +129,10 @@ void Channel::setEvent(__uint32_t ev) {
     events_ = ev;
 }
 
-
+/**
+ * 获取channel类对象的event属性
+ * @return
+ */
 __uint32_t& Channel::getEvents() {
     return events_;
 }
