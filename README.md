@@ -84,3 +84,96 @@ EPOLLET：设置多路复用实例的文件描述符的事件触发机制为边�
 ## C++中std::bind、std::function
 这篇帖子已经讲的很清楚了  
 [C++ 之std::function()及std::bind() 学习](https://blog.csdn.net/p942005405/article/details/84760715)
+## 进程id，线程id，唯一线程id（进程ID，内核线程ID，用户态线程ID
+）
+* pid，每个进程的id，类型为pid_t，可以通过getpid()取得。
+* 线程id，类型为pthread_t，这个id在每个进程里是唯一的，它只用于在进程里区分某个线程，也就是说不同的进程里可能有两个线程的线程id是一样的。可以由pthread_self()取得。
+* tid，线程的真实id，操作系统保证这个值对于每个线程是唯一的，也就是说进程1下面的线程要和进程2下面的线程沟通，只能使用tid。这个值只能通过linux的系统调用取得，syscall(SYS_gettid)
+
+## string中c_str()的用法
+c_str()函数返回一个指向正规C字符串的指针常量, 内容与本string串相同。这是为了与c语言兼容，在c语言中没有string类型，故必须通过string类对象的成员函数c_str()把string 对象转换成c中的字符串样式。注意：一定要使用strcpy()函数 等来操作方法c_str()返回的指针。
+```
+ char c[20];
+ string s="1234";
+ strcpy(c,s.c_str());
+```
+## prctl()函数功能
+```
+int prctl ( int option,unsigned long arg2,unsigned long arg3,unsigned long arg4,unsigned long arg5 )
+```
+这个系统调用指令是为进程制定而设计的，明确的选择取决于option:
+PR_GET_PDEATHSIG :返回处理器信号；  
+PR_SET_PDEATHSIG :arg2作为处理器信号pdeath被输入，正如其名，如果父进程不能再用，进程接受这个信号。  
+PR_GET_DUMPABLE :返回处理器标志dumpable;  
+PR_SET_DUMPABLE :arg2作为处理器标志dumpable被输入。  
+PR_GET_NAME :返回调用进程的进程名字给参数arg2; （Since Linux2.6.9）  
+PR_SET_NAME :把参数arg2作为调用进程的经常名字。（SinceLinux 2.6.11）  
+PR_GET_TIMING :  
+PR_SET_TIMING :判定和修改进程计时模式,用于启用传统进程计时模式的  
+PR_TIMING_STATISTICAL，或用于启用基于时间戳的进程计时模式的  
+PR_TIMING_TIMESTAMP。
+
+## static_cast和dynamic_cast详解
+[static_cast和dynamic_cast详解](https://blog.csdn.net/u014624623/article/details/79837849)   
+派生类不仅有自己的方法和属性，同时它还包括从父类继承来的方法和属性。当我们从派生类向基类转换时，不管用传统的c语言还是c++转换方式都可以百分百转换成功。但是可怕是向下转换类型，也就是我们从基类向派生类转换，当我们采用传统的C语言和c++转换时，就会出现意想不到的情况，因为转换后派生类自己的方法和属性丢失了，一旦我们去调用派生类的方法和属性那就糟糕了，这就是对类继承关系和内存分配理解不清晰导致的。好在c++增加了static_cast和dynamic_cast运用于继承关系类间的强制转化
+
+1 static_cast和dynamic_cast使用方式
+```
+static_cast< new_type >(expression) 
+dynamic_cast< new_type >(expression) 
+备注：new_type为目标数据类型，expression为原始数据类型变量或者表达式。
+```
+2 static_cast详解：
+static_cast相当于传统的C语言里的强制转换，该运算符把expression转换为new_type类型，用来强迫隐式转换如non-const对象转为const对象，编译时检查，用于非多态的转换，可以转换指针及其他，但没有运行时类型检查来保证转换的安全性。它主要有如下几种用法：  
+* 用于类层次结构中基类（父类）和派生类（子类）之间指针或引用的转换。   
+-- 进行上行转换（把派生类的指针或引用转换成基类表示）是安全的；   
+-- 进行下行转换（把基类指针或引用转换成派生类表示）时，由于没有动态类型检查，所以是不安全的。 
+* 用于基本数据类型之间的转换，如把int转换成char，把int转换成enum。 
+* 把空指针转换成目标类型的空指针。 
+* 把任何类型的表达式转换成void类型。 
+* 注意：static_cast不能转换掉expression的const、volatile、或者__unaligned属性
+
+3 dynamic_cast详解：
+```
+转换方式： 
+dynamic_cast< type* >(e) //type必须是一个类类型且必须是一个有效的指针 
+dynamic_cast< type& >(e) //type必须是一个类类型且必须是一个左值 
+dynamic_cast< type&& >(e) //type必须是一个类类型且必须是一个右值
+```
+e的类型必须符合以下三个条件中的任何一个： 
+* e的类型是目标类型type的公有派生类 
+* e的类型是目标type的共有基类 
+* e的类型就是目标type的类型。
+
+如果一条dynamic_cast语句的转换目标是指针类型并且失败了，则结果为0。如果转换目标是引用类型并且失败了，则dynamic_cast运算符将抛出一个std::bad_cast异常(该异常定义在typeinfo标准库头文件中)。e也可以是一个空指针，结果是所需类型的空指针。
+
+dynamic_cast主要用于类层次间的上行转换和下行转换，还可以用于类之间的交叉转换（cross cast）。
+
+在类层次间进行上行转换时，dynamic_cast和static_cast的效果是一样的；在进行下行转换时，dynamic_cast具有类型检查的功能，比static_cast更安全。dynamic_cast是唯一无法由旧式语法执行的动作，也是唯一可能耗费重大运行成本的转型动作  
+（1）指针类型 
+    举例，Base为包含至少一个虚函数的基类，Derived是Base的共有派生类，如果有一个指向Base的指针bp，我们可以在运行时将它转换成指向Derived的指针  
+（2）引用类型
+    因为不存在所谓空引用，所以引用类型的dynamic_cast转换与指针类型不同，在引用转换失败时，会抛出std::bad_cast异常，该异常定义在头文件typeinfo中。
+    
+## snprintf函数使用总结
+```
+【函数原型】
+
+int snprintf(char *str, size_t size, const char *format, ...);
+
+【函数参数】
+
+str:目标字符串；size:拷贝字节数(Bytes); format:源字符串; ...格式
+
+【函数功能】
+
+最多从源字符串format中拷贝size字节的内容(含字符串结尾标志'\0')到目标字符串
+
+The  functions  snprintf() write  at most size bytes (including the terminating null byte ('\0')) to str.
+
+【返回值】
+
+成功返回源串的长度(strlen, 不含'\0')
+
+失败返回负值
+```
