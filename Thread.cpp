@@ -36,7 +36,13 @@ void CurrentThread::cacheTid() {
         t_tidStringLength = snprintf(t_tidString, sizeof(t_tidString),"%5d",t_cachedTid);
     }
 }
-
+/**
+ * 使用了一个中间结构，ThreadData，装载了我们希望赋予副线程的名字，
+ * 希望从副线程那里取回的tid指针，还有我们希望它执行的函数。
+ * startThread是一个外部的函数，用来调用ThreadData的runInThread，
+ * 因为pthread_create只接受静态函数，所以我们需要一个跳板，这边是startThread存在的意义。
+ * runInThread里我们修改线程名字，获取线程tid的值，运行fun。
+ */
 struct ThreadData
 {
     typedef Thread::ThreadFunc ThreadFunc;
@@ -73,6 +79,12 @@ void *startThread(void* obj)
     return NULL;
 }
 
+/**
+ * Thread的构造函数，需要完成线程入口函数的指定，线程的名字
+ * 以及线程的状态
+ * @param func
+ * @param n
+ */
 Thread::Thread(const Thread::ThreadFunc &func, const std::string &n)
         :started_(false),
          joined_(false),
@@ -98,6 +110,11 @@ void Thread::setDefaultName() {
     }
 }
 
+/**
+ * 开启线程，要把ThreadData这个结构体作为传入参数传进去
+ * 且需要检查latch_
+ * 这一步是要保证传进去的函数确实被运行了
+ */
 void Thread::start() {
     assert(!started());
     started_ = true;

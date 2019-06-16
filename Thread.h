@@ -23,7 +23,7 @@ public:
     void start();
     int join();
     bool started() const{
-        return started();
+        return started_;
     }
     pid_t tid() const{
         return tid_;
