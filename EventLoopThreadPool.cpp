@@ -39,7 +39,7 @@ void EventLoopThreadPool::start() {
     {
         std::shared_ptr<EventLoopThread> t(new EventLoopThread());
         threads_.push_back(t);
-        loops_.push_back(t->startLoop());
+        loops_.push_back(t->startLoop());//创建线程
     }
 }
 

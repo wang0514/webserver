@@ -3,6 +3,7 @@
 //
 #include "EventLoop.h"
 #include "Util.h"
+#include "MutexLock.h"
 #include <iostream>
 #include <sys/eventfd.h>
 using namespace std;
@@ -147,4 +148,64 @@ void EventLoop::wakeup() {
     ssize_t n = writen(wakeupFd_,(char *)&one, sizeof(one));
     if(n!= sizeof(one))
         cout<<"EventLoop:wakeup() writes" << n << "bytes instead of 8";
+}
+void EventLoop::runInLoop(EventLoop::Functor &&cb) {
+    ///如果是当前I/O线程调用，则直接调用这个cb()函数就好
+    if(isInLoopThread())
+    {
+        cb();
+    } else
+    {
+        ///std::move是将对象的状态或者所有权从一个对象转移到另一个对象，只是转移，没有内存的搬迁或者内存拷贝。
+        ///如果不是当前线程，就需要将其加入到队列，这要求处理函数必须是线程安全的函数
+        queueInLoop(std::move(cb));
+    }
+}
+
+/**
+ * 如果时EventLoop的owner线程，会调用runInLoop会立即执行回调函数cb
+ * 否则会把回调函数放到任务队列（其实时vector），即调用queueInLoop函数。
+ * 如果不是当前线程调用，或者正在执行pendingFunctors_中的任务，
+ * 都要唤醒EventLoop的owner线程，让其执行pendingFunctors_中的任务。
+ * 如果正在执行pendingFunctors_中的任务，添加新任务后不会执行新的任务，
+ * 因为functors.swap(pendingFunctors_)后，执行的时functors中的任务
+ * -调用queueInLoop的线程不是当前IO线程需要唤醒（当前I/O线程指的是EventLoop所属的I/O线程），A线程往B线程添加任务
+ * -或者调用queueInLoop的线程是当前IO线程，并且此时正在调用pending functor，需要唤醒（doPendingFunctors内部中又调用了queueInLoop）
+ * -只有IO线程的事件回调中调用queueInLoop才不需要唤醒
+ * @param cb
+ */
+
+void EventLoop::queueInLoop(EventLoop::Functor &&cb) {
+    ///范围内加锁,添加cb（）函数到pendingFunctors_队列中
+    {
+        MutexLockGuard lock(mutex_);
+
+        pendingFunctors_.emplace_back(std::move(cb));
+    }
+    if(!isInLoopThread()||callingPendingFunctors_)
+        wakeup();
+}
+
+
+/**
+ * 不是简单地在临界区内依次调用Functor，而是把回调列表swap到functors中，
+ * 这样一方面减小了临界区的长度（意味着不会阻塞其它线程的queueInLoop()），
+ * 另一方面，也避免了死锁（因为Functor可能再次调用queueInLoop()）
+ * 由于doPendingFunctors()调用的Functor可能再次调用queueInLoop(cb)，
+ * 这时，queueInLoop()就必须wakeup()，否则新增的cb可能就不能及时调用了
+ * muduo没有反复执行doPendingFunctors()直到pendingFunctors为空，这是有意的，
+ * 否则IO线程可能陷入死循环，无法处理IO事件。
+ */
+void EventLoop::doPendingFunctors() {
+    std::vector<Functor> functors;
+    callingPendingFunctors_ = true;
+    {
+        MutexLockGuard lock(mutex_);
+        functors.swap(pendingFunctors_);
+    }
+    for (size_t i = 0; i < functors.size(); ++i)
+    {
+        functors[i]();
+    }
+    callingPendingFunctors_ = false;
 }
